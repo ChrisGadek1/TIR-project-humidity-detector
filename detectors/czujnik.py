@@ -1,6 +1,3 @@
-#!/usr/bin/python
-
-# This shows a simple example of an MQTT subscriber.
 import json
 import time
 import threading
@@ -11,7 +8,7 @@ humidity = int(sys.argv[1])
 rain_or_sprinkling = False if sys.argv[2] == "False" else True
 time_to_dry = float(sys.argv[3])
 mqqtc_server = sys.argv[4]
-id = sys.argv[5]
+id = int(sys.argv[5])
 sector_id = None
 desired_humidity = None
 
@@ -28,17 +25,17 @@ def on_message(mqttc, obj, msg):
             msg_dict = json.loads(msg.payload)
             for sector in msg_dict["sectors"]:
                 if sector["sensor_id"] == id:
-                    sector_id = sector["id"]
-                    desired_humidity = sector["desired_humidity"]
-                    mqttc.subscribe("agh/iot/project9/simulation/area/"+sector_id+"/rain", 0)
+                    sector_id = int(sector["id"])
+                    desired_humidity = int(sector["desired_humidity"])
+                    mqttc.subscribe("agh/iot/project9/simulation/area/"+str(sector_id)+"/rain", 0)
 
         except Exception as e:
-            print("json with incorrect format, "+e)
+            print("json with incorrect format, "+str(e))
 
-    elif msg.topic == "agh/iot/project9/sensor/"+id+"/request":
-        mqttc.publish("agh/iot/project9/sensor/"+id+"/humidity", str(humidity), 0, False)
-    elif msg.topic == "agh/iot/project9/simulation/area/"+sector_id+"/rain":
-        if msg.payload == "water":
+    elif msg.topic == "agh/iot/project9/sensor/"+str(id)+"/request":
+        mqttc.publish("agh/iot/project9/sensor/"+str(id)+"/humidity", str(humidity), 0, False)
+    elif msg.topic == "agh/iot/project9/simulation/area/"+str(sector_id)+"/rain":
+        if msg.payload == b"water":
             rain_or_sprinkling = True
         else:
             rain_or_sprinkling = False
@@ -75,18 +72,12 @@ mqttc.on_subscribe = on_subscribe
 mqttc.on_log = on_log
 mqttc.connect(mqqtc_server, 1883, 60)
 
-# setting testament for that client
-#mqttc.will_set("temp/floor1/room1/pref2", "", 0, True)
-
-mqttc.subscribe("agh/iot/project9/sensor/"+id+"/request", 0)
+mqttc.subscribe("agh/iot/project9/sensor/"+str(id)+"/request", 0)
 mqttc.subscribe("agh/iot/project9/config", 0)
 
 new_thread = threading.Thread(target=humidity_thread)
 
 new_thread.start()
-
-# publishing message on topic with QoS 0 and the message is not Retained
-# mqttc.publish("temp/floor1/room1/pref2", "20", 0, False)
 
 mqttc.loop_forever()
  
