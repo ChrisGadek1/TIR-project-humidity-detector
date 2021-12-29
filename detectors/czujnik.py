@@ -4,10 +4,12 @@
 
 import time
 import threading
+import sys
 import mosquitto
 
-humidity = 100
-rain_or_sprinkling = False
+humidity = int(sys.argv[1])
+rain_or_sprinkling = False if sys.argv[2] == "False" else True
+time_to_update = float(sys.argv[3])
 
 def on_connect(mqttc, obj, rc):
     print("rc: "+str(rc))
@@ -34,7 +36,7 @@ def humidity_thread():
         print("current humidity: "+str(humidity))
         print("is raining or sprinkling: "+str(rain_or_sprinkling))
         print("========================")
-        time.sleep(2.0)
+        time.sleep(time_to_update)
 
 
 
