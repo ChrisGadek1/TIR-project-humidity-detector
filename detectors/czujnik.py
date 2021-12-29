@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 # This shows a simple example of an MQTT subscriber.
-
+import json
 import time
 import threading
 import sys
@@ -9,17 +9,41 @@ import mosquitto
 
 humidity = int(sys.argv[1])
 rain_or_sprinkling = False if sys.argv[2] == "False" else True
-time_to_update = float(sys.argv[3])
+time_to_dry = float(sys.argv[3])
 mqqtc_server = sys.argv[4]
 id = sys.argv[5]
+sector_id = None
+desired_humidity = None
 
+mqttc = mosquitto.Mosquitto()
 
 def on_connect(mqttc, obj, rc):
     print("rc: "+str(rc))
 
 def on_message(mqttc, obj, msg):
+    global sector_id, desired_humidity, rain_or_sprinkling
     print(msg.topic+" "+str(msg.qos)+" "+str(msg.payload))
-    #if msg.topic == "project9/config":
+    if msg.topic == "agh/iot/project9/config":
+        try:
+            msg_dict = json.loads(msg.payload)
+            for sector in msg_dict["sectors"]:
+                if sector["sensor_id"] == id:
+                    sector_id = sector["id"]
+                    desired_humidity = sector["desired_humidity"]
+                    mqttc.subscribe("agh/iot/project9/simulation/area/"+sector_id+"/rain", 0)
+
+        except Exception as e:
+            print("json with incorrect format, "+e)
+
+    elif msg.topic == "agh/iot/project9/sensor/"+id+"/request":
+        mqttc.publish("agh/iot/project9/sensor/"+id+"/humidity", str(humidity), 0, False)
+    elif msg.topic == "agh/iot/project9/simulation/area/"+sector_id+"/rain":
+        if msg.payload == "water":
+            rain_or_sprinkling = True
+        else:
+            rain_or_sprinkling = False
+
+
 
 
 def on_publish(mqttc, obj, mid):
@@ -41,10 +65,9 @@ def humidity_thread():
         print("current humidity: "+str(humidity))
         print("is raining or sprinkling: "+str(rain_or_sprinkling))
         print("========================")
-        time.sleep(time_to_update)
+        time.sleep(time_to_dry)
 
 
-mqttc = mosquitto.Mosquitto()
 mqttc.on_message = on_message
 mqttc.on_connect = on_connect
 mqttc.on_publish = on_publish
@@ -55,8 +78,8 @@ mqttc.connect(mqqtc_server, 1883, 60)
 # setting testament for that client
 #mqttc.will_set("temp/floor1/room1/pref2", "", 0, True)
 
-mqttc.subscribe("project9/sensor/"+id+"/request", 0)
-mqttc.subscribe("project9/config", 0)
+mqttc.subscribe("agh/iot/project9/sensor/"+id+"/request", 0)
+mqttc.subscribe("agh/iot/project9/config", 0)
 
 new_thread = threading.Thread(target=humidity_thread)
 
