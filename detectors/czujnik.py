@@ -39,7 +39,7 @@ def on_message(mqttc, obj, msg):
     elif msg.topic == "agh/iot/project9/simulation/area/"+str(sector_id)+"/rain":
         try:
             sprinkling_data = json.loads(msg.payload)
-            if sprinkling_data["rain"] != "None":
+            if str(sprinkling_data["rain"]).lower() != "none":
                 rain = True if sprinkling_data["rain"].lower() == "true" else False
             else:
                 sprinkler_id = int(sprinkling_data["sprinkler_id"])
