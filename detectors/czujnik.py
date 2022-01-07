@@ -32,7 +32,7 @@ def on_message(mqttc, obj, msg):
         except Exception as e:
             print("json with incorrect format, "+str(e))
 
-    elif msg.topic == "agh/iot/project9/sensor/"+str(id)+"/request":
+    elif msg.topic == "agh/iot/project9/sensor/request":
         mqttc.publish("agh/iot/project9/sensor/"+str(id)+"/humidity", str(humidity), 0, False)
     elif msg.topic == "agh/iot/project9/simulation/area/"+str(sector_id)+"/rain":
         if msg.payload == b"water":
@@ -72,7 +72,7 @@ mqttc.on_subscribe = on_subscribe
 mqttc.on_log = on_log
 mqttc.connect(mqqtc_server, 1883, 60)
 
-mqttc.subscribe("agh/iot/project9/sensor/"+str(id)+"/request", 0)
+mqttc.subscribe("agh/iot/project9/sensor/request", 0)
 mqttc.subscribe("agh/iot/project9/config", 0)
 
 new_thread = threading.Thread(target=humidity_thread)
